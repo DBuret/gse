@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,20 +12,34 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "<html><head><title>GSE</title></head><body>")
+	// direct html, 90's nostalgia
+	fmt.Fprint(w, "<html>\n<head>\n")
 
-	fmt.Fprintf(w, "<h1>HTTP request</h1>\n<code>")
+	//css
+	fmt.Fprint(w, "<style type=\"text/css\">\n")
+	fmt.Fprintf(w, "h1 {font-family: Calibri, Sans-Serif;}\n")
+	fmt.Fprintf(w, "h2 {\n   font-family: Calibri, Sans-Serif;\n   color: darkblue;\n}\n")
+	fmt.Fprintf(w, "code {background: #dddddd;display: block}\n")
+	fmt.Fprint(w, "</style>\n")
 
+	//title
+	fmt.Fprint(w, "<title>GSE</title></head>\n\n<body>\n")
+
+	//lets start
+	fmt.Fprintf(w, "<h1>HTTP request</h1>\n")
+
+	// main infos
+	fmt.Fprintf(w, "<h2>Method, Host, URL and Protocol</h2>\n<code>\n")
 	fmt.Fprintf(w, "Method=%s<br>\n", r.Method)
 	fmt.Fprintf(w, "Host=%s<br>\n", r.Host)
 	fmt.Fprint(w, "URL=", r.URL, "<br>\n")
 	fmt.Fprintf(w, "Proto=%s<br>\n", r.Proto)
 
-	fmt.Fprint(w, "</code>\n")
+	fmt.Fprint(w, "</code>\n\n")
 
-	// HEADERS
-	fmt.Fprintf(w, "<h1>Headers</h1>\n<code>")
-
+	// http header
+	fmt.Fprintf(w, "<h2>HTTP Headers received</h2>\n")
+	fmt.Fprintf(w, "<small><i>brackets are not part of the headers</i></small>\n<code>\n")
 	sortedHeaders := make([]string, 0, len(r.Header))
 	for k := range r.Header {
 		sortedHeaders = append(sortedHeaders, k)
@@ -36,14 +51,22 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%s=", sortedHeaders[k])
 		fmt.Fprintf(w, "%s", r.Header[sortedHeaders[k]])
 		/*
-			for header := range sortedHeaders[k] {
-				fmt.Fprintf(w, "%s,", r.Header[sortedHeaders[k]][header])
-            }
-        */
+						for header := range sortedHeaders[k] {
+							fmt.Fprintf(w, "%s,", r.Header[sortedHeaders[k]][header])
+			            }
+		*/
 		fmt.Fprint(w, "<br>\n")
 	}
+	fmt.Fprint(w, "</code>\n\n")
 
-	fmt.Fprint(w, "</code>\n")
+	// body of the http request (for PUT,POST, ...)
+	fmt.Fprintf(w, "<h2>Body of the Request (for methods PUT, POST, ...)</h2>\n<code>")
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r.Body)
+	s := buf.String() // Does a complete copy of the bytes in the buffer.
+	fmt.Fprint(w, s)
+	fmt.Fprint(w, "\n</code>\n\n")
 
 	// ENV
 	fmt.Fprint(w, "<h1>ENV</h1>\n")
@@ -52,15 +75,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		//pair := strings.Split(e, "=")
 		fmt.Fprintln(w, e, "<br>")
 	}
-	fmt.Fprint(w, "</code>\n")
+	fmt.Fprint(w, "</code>\n\n")
 
-    /* 
-    fmt.Fprintf(w, "<h1>RAW</h1>\n<code>")
-	fmt.Fprint(w, r)
-    fmt.Fprint(w, "</code>\n") 
-    */
+	/*
+		    fmt.Fprintf(w, "<h1>RAW</h1>\n<code>")
+			fmt.Fprint(w, r)
+		    fmt.Fprint(w, "</code>\n")
+	*/
 
-	fmt.Fprint(w, "</body></html>")
+	fmt.Fprint(w, "</font>\n</body>\n</html>")
 }
 
 func main() {
