@@ -83,7 +83,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		    fmt.Fprint(w, "</code>\n")
 	*/
 
-	fmt.Fprint(w, "</font>\n</body>\n</html>")
+	fmt.Fprint(w, "\n</body>\n</html>")
 }
 
 func main() {
