@@ -22,5 +22,5 @@ $ docker load -i gse.tar
 
 Run image:
 ```
-$ docker run -p 28657:28657 gse`
+$ docker run -p 28657:28657 gse
 ```
