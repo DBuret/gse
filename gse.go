@@ -78,7 +78,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-
+	var gseVersion = "0.2"
 	var gseBasePath = "/gse"
 	var gsePort = "28657" //F23
 
@@ -95,7 +95,8 @@ func main() {
 	// modifier le port par GSE_PORT
 	var portS = fmt.Sprintf(":%s", gsePort)
 
-	fmt.Printf("Use env vars GSE_BASEPATH and GSE_PORT to configure GSE\n.Starting GSE on port %s with basepath %s ...\n", gsePort, gseBasePath)
+	fmt.Printf("Use env vars GSE_BASEPATH and GSE_PORT to configure GSE\n")
+	fmt.Printf("Starting GSE %s on port %s with basepath %s ...\n", gseVersion, gsePort, gseBasePath)
 
 	log.Fatal(http.ListenAndServe(portS, nil))
 }
