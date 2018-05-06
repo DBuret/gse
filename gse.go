@@ -1,5 +1,3 @@
-// static compilation with:
-// CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gse gse.go
 package main
 
 import (
@@ -76,13 +74,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, e, "<br>")
 	}
 	fmt.Fprint(w, "</code>\n\n")
-
-	/*
-		    fmt.Fprintf(w, "<h1>RAW</h1>\n<code>")
-			fmt.Fprint(w, r)
-		    fmt.Fprint(w, "</code>\n")
-	*/
-
 	fmt.Fprint(w, "\n</body>\n</html>")
 }
 
