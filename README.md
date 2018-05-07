@@ -7,11 +7,11 @@ Its goal is to be embedded in a minimal container, to help us debugging the setu
 **This mini project was mainly a first contact with golang and an attempt to build container image from scratch, this is not a real project...** but it works ;-)
 
 ## Compile
-Goal is to create a small but standalone binary to allow us to build a samll container image. 
+Goal is to create a small but standalone binary to allow us to build a small container image. 
 
 So we ask for static linking (even if few libs will be missing, see docker paragraph below)
 
-Then we strip symbolsto save a little less than 1 Mb.
+Then we strip symbols to save a little less than 1 Mb.
 
 ```
 $ GO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gse gse.go

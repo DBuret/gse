@@ -48,11 +48,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		//fmt.Fprintf(w, " %s = %s\n", k, r.Header[k])
 		fmt.Fprintf(w, "%s=", sortedHeaders[k])
 		fmt.Fprintf(w, "%s", r.Header[sortedHeaders[k]])
-		/*
-						for header := range sortedHeaders[k] {
-							fmt.Fprintf(w, "%s,", r.Header[sortedHeaders[k]][header])
-			            }
-		*/
 		fmt.Fprint(w, "<br>\n")
 	}
 	fmt.Fprint(w, "</code>\n\n")
