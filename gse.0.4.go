@@ -4,75 +4,75 @@ package main
 import (
 	"bytes"
 	"fmt"
+	//"html"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"sort"
+	//	"strings"
 
 	"github.com/DBuret/pathandport"
 )
 
+func check(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+type output struct {
+	Method       string
+	Host         string
+	Url          string
+	Proto        string
+	HeaderOutput []string
+	BodyOutput   string
+	EnvOutput    []string
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
-	// direct html, 90's nostalgia
-	fmt.Fprint(w, "<html>\n<head>\n")
+	o := output{
+		Method:       r.Method,
+		Host:         r.Host,
+		Proto:        r.Proto,
+		Url:          fmt.Sprint(r.URL),
+		HeaderOutput: []string{},
+		BodyOutput:   "",
+		EnvOutput:    []string{}}
 
-	//css
-	fmt.Fprint(w, "<style type=\"text/css\">\n")
-	fmt.Fprintf(w, "h1 {font-family: Calibri, Sans-Serif;}\n")
-	fmt.Fprintf(w, "h2 {\n   font-family: Calibri, Sans-Serif;\n   color: darkblue;\n}\n")
-	fmt.Fprintf(w, "code {background: #dddddd;display: block}\n")
-	fmt.Fprint(w, "</style>\n")
+	log.Print(",", o.Method, " ,", o.Host, " ,", o.Url)
 
-	//title
-	fmt.Fprint(w, "<title>GSE</title></head>\n\n<body>\n")
-
-	//lets start
-	fmt.Fprintf(w, "<h1>HTTP request</h1>\n")
-
-	// main infos
-	fmt.Fprintf(w, "<h2>Method, Host, URL and Protocol</h2>\n<code>\n")
-	fmt.Fprintf(w, "Method=%s<br>\n", r.Method)
-	fmt.Fprintf(w, "Host=%s<br>\n", r.Host)
-	fmt.Fprint(w, "URL=", r.URL, "<br>\n")
-	fmt.Fprintf(w, "Proto=%s<br>\n", r.Proto)
-
-	fmt.Fprint(w, "</code>\n\n")
-
-	// http header
-	fmt.Fprintf(w, "<h2>HTTP Headers received</h2>\n")
-	fmt.Fprintf(w, "<small><i>brackets are not part of the headers</i></small>\n<code>\n")
-	sortedHeaders := make([]string, 0, len(r.Header))
-	for k := range r.Header {
+	//headers
+	header := r.Header
+	sortedHeaders := make([]string, 0, len(header))
+	for k := range header {
 		sortedHeaders = append(sortedHeaders, k)
 	}
 	sort.Strings(sortedHeaders)
-
 	for k := range sortedHeaders {
 		//fmt.Fprintf(w, " %s = %s\n", k, r.Header[k])
-		fmt.Fprintf(w, "%s=", sortedHeaders[k])
-		fmt.Fprintf(w, "%s", r.Header[sortedHeaders[k]])
-		fmt.Fprint(w, "<br>\n")
+		o.HeaderOutput = append(o.HeaderOutput,
+			fmt.Sprintf("%s=%s", sortedHeaders[k], header[sortedHeaders[k]]))
 	}
-	fmt.Fprint(w, "</code>\n\n")
 
-	// body of the http request (for PUT,POST, ...)
-	fmt.Fprintf(w, "<h2>Body of the Request (for methods PUT, POST, ...)</h2>\n<code>")
+	//var b strings.Builder
 
+	//body
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
-	s := buf.String() // Does a complete copy of the bytes in the buffer.
-	fmt.Fprint(w, s)
-	fmt.Fprint(w, "\n</code>\n\n")
+	o.BodyOutput = buf.String() // Does a complete copy of the bytes in the buffer.
 
 	// ENV
-	fmt.Fprint(w, "<h1>ENV</h1>\n")
-	fmt.Fprint(w, "<code>\n")
 	for _, e := range os.Environ() {
 		//pair := strings.Split(e, "=")
-		fmt.Fprintln(w, e, "<br>")
+		o.EnvOutput = append(o.EnvOutput, e)
 	}
-	fmt.Fprint(w, "</code>\n\n")
-	fmt.Fprint(w, "\n</body>\n</html>")
+	sort.Strings(o.EnvOutput)
+
+	t, err := template.ParseFiles("template.html")
+	check(err)
+	t.Execute(w, o)
 }
 
 func main() {
@@ -91,7 +91,7 @@ func main() {
 		Handler: mux,
 	}
 
-        log.Printf("Starting %s (%s) on port %s with basepath %s ...\n", programName, programVersion, port, uri)
+	log.Printf("Starting %s (%s) on port %s with basepath %s ...\n", programName, programVersion, port, uri)
 	log.Fatal(s.ListenAndServe())
 }
 
