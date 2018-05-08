@@ -11,11 +11,9 @@ Goal is to create a small but standalone binary to allow us to build a small con
 
 So we ask for static linking 
 
-Then we strip symbols to save a little less than 1 Mb.
-
 ```
-$GGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-w" .
-strip gse
+$ GGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-w" .
+$ strip gse
 ```
 
 The resulting binary is 4 Mb 
@@ -51,5 +49,5 @@ point your web browser to http://localhost:28657/gse => working.
 
 ## Use gse
 GSE will by default answer on URL path = /gse and port 28657.
-You can change this behaviou by using the env vars GSE_BASEPATH and GSE_PORT
+You can change this behaviour by using the env vars GSE_BASEPATH and GSE_PORT
 
