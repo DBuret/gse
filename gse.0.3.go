@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"sort"
-
 	"github.com/DBuret/pathandport"
 )
 

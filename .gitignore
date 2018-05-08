@@ -13,3 +13,11 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 vendor/
+
+#local Binaries
+gse.exe
+gse
+
+#old docker images
+gse.0.2.tar.gz
+

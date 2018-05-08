@@ -7,9 +7,9 @@ List images
 $ docker images
 ```
 
-Export image
+Export image gse
 ```
-$ docker save imageName | gzip > imageName.tar.gz
+$ sudo docker save gse | gzip > gse.0.3.tar.gz
 ```
 
 
