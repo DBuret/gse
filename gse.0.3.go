@@ -1,3 +1,4 @@
+// GSE - Go Show Env - see https://github.com/DBuret/gse
 package main
 
 import (
