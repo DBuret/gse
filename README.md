@@ -1,5 +1,7 @@
 # GSE
 
+GO Show Env
+
 A small standalone web app that just display its env &amp; information about the HTTP request it received
 
 Its goal is to be embedded in a minimal container, to help us debugging the setup of our containers orchestrator & reverse proxies.
@@ -16,9 +18,10 @@ $ GGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-w" .
 $ strip gse
 ```
 
-The resulting binary is 4 Mb 
+The resulting binary is 6 Mb 
 
 Run GSE:
+
 ```
 $ ./gse
 ```
@@ -28,19 +31,22 @@ point your web browser to http://localhost:28657/gse => It works.
 The idea is to create an image from scratch.
 
 Since the app has been statically linked, the Dockerfile is simply
+
 ```
 FROM scratch
 ADD gse /
 CMD ["/gse"]
 ```
 
-Build image (result: 4Mb)
+Build image (result: 6Mb)
+
 ```
 $ sudo docker build -t gse .
 ```
 
 
 Run locally with docker
+
 ```
 $ sudo docker run -p 28657:28657 gse
 ```
