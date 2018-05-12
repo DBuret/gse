@@ -5,10 +5,14 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"sort"
+	"strings"
+
 	"github.com/DBuret/pathandport"
 )
 
@@ -19,37 +23,34 @@ func check(err error) {
 }
 
 var (
-    Trace   *log.Logger
-    Info    *log.Logger
-    Warning *log.Logger
-    Error   *log.Logger
+	Trace   *log.Logger
+	Info    *log.Logger
+	Warning *log.Logger
+	Error   *log.Logger
 )
 
-func Init(
-    traceHandle io.Writer,
-    infoHandle io.Writer,
-    warningHandle io.Writer,
-    errorHandle io.Writer) {
+func initLoggers(
+	traceHandle io.Writer,
+	infoHandle io.Writer,
+	warningHandle io.Writer,
+	errorHandle io.Writer) {
 
-    Trace = log.New(traceHandle,
-        "TRACE: ",
-        log.Ldate|log.Ltime|log.Lshortfile)
+	Trace = log.New(traceHandle,
+		"TRACE: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
 
-    Info = log.New(infoHandle,
-        "INFO: ",
-        log.Ldate|log.Ltime|log.Lshortfile)
+	Info = log.New(infoHandle,
+		"INFO: ",
+		log.Ldate|log.Ltime)
 
-    Warning = log.New(warningHandle,
-        "WARNING: ",
-        log.Ldate|log.Ltime|log.Lshortfile)
+	Warning = log.New(warningHandle,
+		"WARNING: ",
+		log.Ldate|log.Ltime)
 
-    Error = log.New(errorHandle,
-        "ERROR: ",
-        log.Ldate|log.Ltime|log.Lshortfile)
+	Error = log.New(errorHandle,
+		"ERROR: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
 }
-
-func main() {
-
 
 type output struct {
 	Method       string
@@ -71,7 +72,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		BodyOutput:   "",
 		EnvOutput:    []string{}}
 
-	Info.Printf(",", o.Method, " ,", o.Host, " ,", o.Url)
+	Info.Print(",", o.Method, " ,", o.Host, " ,", o.Url)
 
 	//headers
 	header := r.Header
@@ -82,9 +83,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(sortedHeaders)
 	for k := range sortedHeaders {
 		o.HeaderOutput = append(o.HeaderOutput,
-			fmt.Sprintf("%s=%s", sortedHeaders[k], strings.Join(header[sortedHeaders[k]],", ")))
+			fmt.Sprintf("%s=%s", sortedHeaders[k], strings.Join(header[sortedHeaders[k]], ",")))
 	}
-	
+
 	//body
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
@@ -104,13 +105,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	var programVersion = "0.5"
 	var programName = "gse"
-	
-	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
-	uri, port, err := pathAndPort.Parse(programName, "28657")
-	
+	initLoggers(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+
+	uri, port, err, info := pathandport.Parse(programName, "28657")
+
 	if err != "" {
-	   Error.Print(err)
+		Error.Print(err)
+	}
+
+	if info != "" {
+		Info.Print(info)
 	}
 
 	mux := http.NewServeMux()
@@ -123,5 +128,3 @@ func main() {
 	Info.Printf("Starting %s (%s) on port %s with basepath %s ...\n", programName, programVersion, port, uri)
 	log.Fatal(s.ListenAndServe())
 }
-
-

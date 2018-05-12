@@ -31,11 +31,9 @@
     </code>
 
     <h2>HTTP Headers received</h2>
-    <small>
-        <i>brackets are not part of the headers</i>
-    </small>
     <code>
-            {{range .HeaderOutput}}{{ . }}<br>{{end}} 
+        {{range .HeaderOutput}}{{ . }}
+        <br>{{end}}
     </code>
 
     <h2>Body of the Request (for methods PUT, POST, ...)</h2>
@@ -45,7 +43,8 @@
 
     <h1>ENV</h1>
     <code>
-        {{range .EnvOutput}}{{ . }}<br>{{end}} 
+        {{range .EnvOutput}}{{ . }}
+        <br>{{end}}
     </code>
 
 
