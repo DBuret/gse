@@ -19,5 +19,5 @@ gse.exe
 gse
 
 #old docker images
-gse.0.2.tar.gz
+*.tar.gz
 
