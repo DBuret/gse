@@ -11,7 +11,7 @@ import (
 	"os"
 	"sort"
 	"io"
-	"io/util"
+	"io/ioutil"
 	"github.com/DBuret/pathandport"
 )
 
