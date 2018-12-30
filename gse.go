@@ -48,9 +48,6 @@ func Init(
         log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-func main() {
-
-
 type output struct {
 	Method       string
 	Host         string
