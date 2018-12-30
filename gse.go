@@ -120,7 +120,7 @@ func main() {
 		Handler: mux,
 	}
 
-	Info.Printf("Starting %s (%s) on port %s with basepath %s ...\n", programName, programVersion, port, uri)
+	Info.Printf("%s\nStarting %s (%s) on port %s with basepath %s ...\n", info,programName, programVersion, port, uri)
 	log.Fatal(s.ListenAndServe())
 }
 
