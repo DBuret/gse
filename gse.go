@@ -3,12 +3,14 @@ package main
 
 import (
 	"bytes"
+	"strings"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"sort"
+	"io"
 	"github.com/DBuret/pathandport"
 )
 
