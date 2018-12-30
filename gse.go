@@ -11,6 +11,7 @@ import (
 	"os"
 	"sort"
 	"io"
+	"ioutil"
 	"github.com/DBuret/pathandport"
 )
 
@@ -106,7 +107,7 @@ func main() {
 	
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
-	uri, port, err := pathAndPort.Parse(programName, "28657")
+	uri, port, info, err := pathAndPort.Parse(programName, "28657")
 	
 	if err != "" {
 	   Error.Print(err)
