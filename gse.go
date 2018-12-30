@@ -15,11 +15,7 @@ import (
 	"github.com/DBuret/pathandport"
 )
 
-func check(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
+
 
 var (
     Trace   *log.Logger
@@ -51,6 +47,12 @@ func Init(
         log.Ldate|log.Ltime|log.Lshortfile)
 }
 
+func check(err error) {
+	if err != nil {
+		Error.Printf(err)
+	}
+}
+
 type output struct {
 	Method       string
 	Host         string
@@ -61,7 +63,7 @@ type output struct {
 	EnvOutput    []string
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 	o := output{
 		Method:       r.Method,
 		Host:         r.Host,
@@ -88,7 +90,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	//body
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
-	o.BodyOutput = buf.String() // Does a complete copy of the bytes in the buffer.
+	o.BodyOutput = buf.String() // complete copy of the bytes in the buffer.
 
 	// ENV
 	for _, e := range os.Environ() {
@@ -102,19 +104,29 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var programVersion = "0.5"
+	var programVersion = "0.6"
 	var programName = "gse"
 	
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
 	uri, port, info, err := pathAndPort.Parse(programName, "28657")
 	
-	if err != "" {
-	   Error.Print(err)
-	}
+	check(err)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc(uri, handler)
+	
+	mux.HandleFunc(uri, showEnvHandler)
+	
+	mux.HandleFunc(uri + "/version", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		fmt.Fprintln(w, "Oops, you requested an unknown location.\n FYI, my base path is " + uri)
+	})
+	
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		fmt.Fprintln(w, "Oops, you requested an unknown location.\n FYI, my base path is " + uri)
+	})
+	
 	s := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: mux,
