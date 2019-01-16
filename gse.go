@@ -104,7 +104,7 @@ func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var programVersion = "0.6"
+	var programVersion = "2.0"
 	var programName = "gse"
 	
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
