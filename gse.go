@@ -119,7 +119,12 @@ func main() {
 	
 	mux.HandleFunc(uri + "/version", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		fmt.Fprintln(w, "Oops, you requested an unknown location.\n FYI, my base path is " + uri)
+		fmt.Fprintln(w, programVersion )
+	})
+	
+	mux.HandleFunc(uri + "/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		fmt.Fprintln(w, "ok" )
 	})
 	
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
