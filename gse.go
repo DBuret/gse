@@ -3,53 +3,52 @@ package main
 
 import (
 	"bytes"
+	"strings"
 	"fmt"
 	"html/template"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"sort"
-	"strings"
-
-	"github.com/DBuret/pathandport"
+	"io"
+	"io/ioutil"
+	"github.com/namsral/flag"
 )
+
+var (
+    Trace   *log.Logger
+    Info    *log.Logger
+    Warning *log.Logger
+    Error   *log.Logger
+)
+
+func Init(
+    traceHandle io.Writer,
+    infoHandle io.Writer,
+    warningHandle io.Writer,
+    errorHandle io.Writer) {
+
+    Trace = log.New(traceHandle,
+        "TRACE: ",
+        log.Ldate|log.Ltime|log.Lshortfile)
+
+    Info = log.New(infoHandle,
+        "INFO: ",
+        log.Ldate|log.Ltime|log.Lshortfile)
+
+    Warning = log.New(warningHandle,
+        "WARNING: ",
+        log.Ldate|log.Ltime|log.Lshortfile)
+
+    Error = log.New(errorHandle,
+        "ERROR: ",
+        log.Ldate|log.Ltime|log.Lshortfile)
+}
 
 func check(err error) {
 	if err != nil {
-		log.Fatal(err)
+		Error.Printf(err)
 	}
-}
-
-var (
-	Trace   *log.Logger
-	Info    *log.Logger
-	Warning *log.Logger
-	Error   *log.Logger
-)
-
-func initLoggers(
-	traceHandle io.Writer,
-	infoHandle io.Writer,
-	warningHandle io.Writer,
-	errorHandle io.Writer) {
-
-	Trace = log.New(traceHandle,
-		"TRACE: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-
-	Info = log.New(infoHandle,
-		"INFO: ",
-		log.Ldate|log.Ltime)
-
-	Warning = log.New(warningHandle,
-		"WARNING: ",
-		log.Ldate|log.Ltime)
-
-	Error = log.New(errorHandle,
-		"ERROR: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
 }
 
 type output struct {
@@ -62,7 +61,7 @@ type output struct {
 	EnvOutput    []string
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 	o := output{
 		Method:       r.Method,
 		Host:         r.Host,
@@ -70,9 +69,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		Url:          fmt.Sprint(r.URL),
 		HeaderOutput: []string{},
 		BodyOutput:   "",
-		EnvOutput:    []string{}}
+		EnvOutput:    []string{}
+	}
 
-	Info.Print(",", o.Method, " ,", o.Host, " ,", o.Url)
+	Trace.Printf(",", o.Method, " ,", o.Host, " ,", o.Url)
 
 	//headers
 	header := r.Header
@@ -83,13 +83,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(sortedHeaders)
 	for k := range sortedHeaders {
 		o.HeaderOutput = append(o.HeaderOutput,
-			fmt.Sprintf("%s=%s", sortedHeaders[k], strings.Join(header[sortedHeaders[k]], ",")))
+			fmt.Sprintf("%s=%s", sortedHeaders[k], strings.Join(header[sortedHeaders[k]],", ")))
 	}
-
+	
 	//body
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
-	o.BodyOutput = buf.String() // Does a complete copy of the bytes in the buffer.
+	o.BodyOutput = buf.String() // complete copy of the bytes in the buffer.
 
 	// ENV
 	for _, e := range os.Environ() {
@@ -103,28 +103,65 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var programVersion = "0.5"
+	var programVersion = "3.0"
 	var programName = "gse"
+	
+	Init(ioutil.Stdout, os.Stdout, os.Stdout, os.Stderr)
+    
+    // env parsing
+    flag.StringVar(&uri,"basepath", "/gse", "base path in the url")
+    flag.IntVar(&port,"port", 28657, "default listening port")
+    flag.BoolVar(&healthcheck,"healthcheck", true, "enable/disable healthckeck endpoint")
 
-	initLoggers(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+    flag.Parse()
 
-	uri, port, err, info := pathandport.Parse(programName, "28657")
-
-	if err != "" {
-		Error.Print(err)
-	}
-
-	if info != "" {
-		Info.Print(info)
-	}
-
+	// get an http server
 	mux := http.NewServeMux()
-	mux.HandleFunc(uri, handler)
+	
+	// handlers
+	//	 /uri
+	mux.HandleFunc(uri, showEnvHandler)
+	
+	//	/uri/version
+	mux.HandleFunc(uri + "/version", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		fmt.Fprintln(w, programVersion)
+	})
+	
+	//	/uri/health
+	mux.HandleFunc(uri + "/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method = "GET" {
+			if healthcheck {
+				w.WriteHeader(200)
+				fmt.Fprintln(w, "I'm alive")
+			} else {
+				w.WriteHeader(503)
+				fmt.Fprintln(w, "I´m sick")
+			}
+		} else if r.Method = "POST" {
+			healthcheck = !healthcheck
+		}
+	})
+	
+	//	/
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		fmt.Fprintln(w, "Oops, you requested an unknown location.\n FYI, my base path is " + uri)
+	})
+	
+	
+	// start http server
 	s := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: mux,
 	}
 
-	Info.Printf("Starting %s (%s) on port %s with basepath %s ...\n", programName, programVersion, port, uri)
+	// log config used
+	Info.Printf("Starting %s (%s) on port %s with basepath %s and healthtcheck=%s...\n",
+		programName,
+		programVersion, 
+		port, 
+		uri, 
+		healthcheck )
 	log.Fatal(s.ListenAndServe())
 }
