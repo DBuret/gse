@@ -133,7 +133,7 @@ func main() {
 		if r.Method = "GET" {
 			if healthcheck {
 				w.WriteHeader(200)
-				fmt.Fprintln(w, programVersion)
+				fmt.Fprintln(w, "I'm alive")
 			} else {
 				w.WriteHeader(503)
 				fmt.Fprintln(w, "I´m sick")
