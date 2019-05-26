@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -16,12 +17,17 @@ import (
 )
 
 var (
-	Trace   *log.Logger
-	Info    *log.Logger
+	// Trace logger: debug
+	Trace *log.Logger
+	// Info logger: standard info logs
+	Info *log.Logger
+	// Warning logger: non fatal errors
 	Warning *log.Logger
-	Error   *log.Logger
+	// Error logger: panic
+	Error *log.Logger
 )
 
+// Init : setup loggers
 func Init(
 	traceHandle io.Writer,
 	infoHandle io.Writer,
@@ -30,15 +36,15 @@ func Init(
 
 	Trace = log.New(traceHandle,
 		"TRACE: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
+		log.Ldate|log.Ltime)
 
 	Info = log.New(infoHandle,
 		"INFO: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
+		log.Ldate|log.Ltime)
 
 	Warning = log.New(warningHandle,
 		"WARNING: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
+		log.Ldate|log.Ltime)
 
 	Error = log.New(errorHandle,
 		"ERROR: ",
@@ -49,6 +55,11 @@ func check(err error) {
 	if err != nil {
 		Error.Printf("%s", err)
 	}
+}
+
+func sanitize(i string) string {
+	re := regexp.MustCompile(`[^0-9A-Za-z\{\}\:\,\[\]]`)
+	return fmt.Sprintf("%q\n", re.ReplaceAllString(i, ""))
 }
 
 type output struct {
@@ -88,7 +99,7 @@ func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 	//body
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
-	o.BodyOutput = buf.String() // copy buffer.
+	o.BodyOutput = buf.String()
 
 	// ENV
 	for _, e := range os.Environ() {
@@ -102,11 +113,11 @@ func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var programVersion = "3.0"
+	var programVersion = "4.0"
 	var programName = "gse"
 	var uri, mark string
 	var port int
-	var healthcheck bool
+	var healthcheck, loggerEP bool
 
 	Init(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
 
@@ -116,6 +127,7 @@ func main() {
 	confManager.StringVar(&uri, "basepath", "/gse", "base path in the url")
 	confManager.IntVar(&port, "port", 28657, "default listening port")
 	confManager.BoolVar(&healthcheck, "healthcheck", true, "enable/disable healthckeck endpoint")
+	confManager.BoolVar(&loggerEP, "logger", false, "enable/disable logger endpoint")
 	confManager.StringVar(&mark, "stamp", "", "specify a stamp to be added to version endpoint answer")
 
 	confManager.Parse(os.Args[1:])
@@ -150,7 +162,36 @@ func main() {
 		case "POST", "PUT":
 			// this is dirty - no mutex...
 			healthcheck = !healthcheck
+			w.WriteHeader(200)
+			fmt.Fprintln(w, fmt.Sprintf("healthcheck has been switched to %t", healthcheck))
 			Trace.Printf("healthcheck has been switched to %t", healthcheck)
+		}
+	})
+
+	//	/uri/logger
+	mux.HandleFunc(uri+"/logger", func(w http.ResponseWriter, r *http.Request) {
+		if loggerEP {
+			switch r.Method {
+			case "GET":
+				w.WriteHeader(400)
+				fmt.Fprintln(w, "logger endpoint uncorrectly called with GET method")
+				Warning.Printf("logger endpoint uncorrectly called with GET method")
+			case "POST", "PUT":
+				bdy := new(bytes.Buffer)
+				bdy.ReadFrom(r.Body)
+
+				w.WriteHeader(200)
+				fmt.Fprintln(w, "data ingested.")
+				Trace.Printf(fmt.Sprintf("%s %s%s, LOGGER: %s",
+					r.Method,
+					r.Host,
+					r.URL,
+					sanitize(bdy.String())))
+			}
+		} else {
+			w.WriteHeader(400)
+			fmt.Fprintln(w, "logger endpoint called but not activited in configuration")
+			Warning.Printf("logger endpoint called but not activited in configuration")
 		}
 	})
 
@@ -167,12 +208,13 @@ func main() {
 	}
 
 	// log config used
-	Info.Printf("Starting %s (%s) on port %d with basepath %s and healthtcheck=%t...\n",
+	Info.Printf("Starting %s (%s) on port %d with basepath %s, healthtcheck=%t, and logger_endpoint=%t...\n",
 		programName,
 		programVersion+mark,
 		port,
 		uri,
-		healthcheck)
+		healthcheck,
+		loggerEP)
 
 	log.Fatal(s.ListenAndServe())
 }

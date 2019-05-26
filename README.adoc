@@ -58,6 +58,12 @@ GSE offers 3 end points
     healthcheck has been switched to false
     healthcheck has been switched to true
 
+=== logger
+WARNING: This endpoint is not activated by default since input sanitization is crappy. Use at your own risk
+
+*  `/gse/logger` is an HTTP `POST` endpoint that will write to stdout the payload of the POST request
+* answer: HTTP 200 status, content will be the text string _data ingested._ 
+
 == Parameters
 
 GSE accepts some parameters, either through command line flags or env vars. 
@@ -75,6 +81,9 @@ GSE accepts some parameters, either through command line flags or env vars.
 
 | set healthcheck answer to HTTP 200 or HTTP 503 | `GSE_HEALTHCHECK` | `-healthcheck` | boolean | `true`
 
+| activate logger endpoint | `GSE_LOGGER` | `-logger` | boolean | `false`
+
+
 |===
 
 .We also have the standard -h cli arg
@@ -85,7 +94,7 @@ $ ./gse -h
 
 Since we use https://github.com/namsral/flag to parse arguments, they can be fed either through command line or env vars. 
 
-CAUTION: flag parsing when value is `/...` seems to be bugged on windows 
+CAUTION: flag parsing when value is `/...` seems to be bugged on windows. You cannot change the basepath on gse if you run on windows.
 
 
 == Compile
@@ -144,7 +153,7 @@ point your web browser to http://localhost:28657/gse
 === using parameters
 [source,console]
 ----
-$ sudo docker run -e GSE_BASEPATH=/foo -e GSE_PORT=2000 -e GSE_STAMP=A -e GSE_HEALTHCHECK=false -p 2000:2000 gse
+$ sudo docker run -e GSE_BASEPATH=/foo -e GSE_PORT=2000 -e GSE_STAMP=A -e GSE_HEALTHCHECK=false -e GSE_LOGGER=true -p 2000:2000 gse
 ----
 
 .Point your web browser to
