@@ -1,0 +1,164 @@
+= GSE: "Go Show Env" micro HTTP service
+:author: David Buret
+:source-highlighter: rouge
+:pygments-style: github
+:icons: font
+:sectnums:
+:toclevels: 4
+:toc:
+:imagesdir: images/
+:gitplant: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/DBuret/myjournal/master/
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+== Introduction 
+
+GSE is a small standalone web app that just display its env &amp; informations about the HTTP request it received
+
+Its goal is to be embedded in a minimal container (less than 10 Mb), to help us debugging the setup of our containers orchestrator & reverse proxies.
+
+WARNING: This was my first attempt as golang. Quick'n Dirty, but this tool has been proven usefull during our journey with Nomad or Kube...
+
+== Endpoints
+
+GSE offers 3 end points
+
+=== Display environment
+
+* `/gse` endpoint can be queried through any HTTP method (GET, PUT, ...). It will answer an HTTP 200 status, with an HTML content displaying information about the HTTP request received
+** headers
+** hostname
+** path
+** POST/PUT/... parameters
+* note that this endpoint will write a one line log to stdout
+* `/gse` can be changed to another path via the `GSE_BASEPATH` pararameter. Other endpoints (version, healthcheck) will inherit this parameters.
+
+=== Display version & stamp
+* `/gse/version` endpoint can be queried through any HTTP method (GET, PUT, ...). It will answer an HTTP 200 status,with a single text line content made of program version and its stamp (if one has been specified, default stamp being empty) 
+** the "stamp" allows us to test rolling, blue/green, or canary update with our container orchestrator: the same docker image (=same version) can be run with a given stamp (see GSE_STAMP bellow) given as parameter by the orchestrator, so we can differenciate to deployments, exemple:
+*** with no stamp, the answer will be `3.0`
+*** with GSE_STAMP="A",  the answer will be `3.0A`
+
+
+=== Healthcheck
+* `/gse/health` is a endpoint to be used as healthcheck through an HTTP `GET` query. Answer will be 
+** when healtcheck is on: HTTP 200 status, content will be the text string _I'm alive_ 
+** when healthcechk is off: HTTP 503 status, content will be the text string _I'm sick_ 
+** no log will be written to stdout
+* healthcheck can be switched on/off (flip/flop) with an access with HTTP `POST` or `PUT` methods:
+*** `curl -X POST http://127.0.0.1:28657/gse/health`
+*** `curl -X PUT http://127.0.0.1:28657/gse/health`
+*** note that `POST` or `PUT` access to this endpoint writes log to stdout:
+
+    healthcheck has been switched to false
+    healthcheck has been switched to true
+
+
+
+== Parameters
+
+GSE accepts some parameters, either through command line flags or env vars. 
+
+.GSE parameters
+[cols="3,^1,^1,^1,^1"]
+|===
+| parameter | env var name | cli name | type |default value 
+
+| path in the url (note: impacts all endpoints)| `GSE_BASEPATH` | `-basepath` |string | `/gse`
+
+| tcp port to listen to | `GSE_PORT` | `-port` | int  | `28657`
+
+| stamp added to version endpoint | `GSE_STAMP`| `-stamp` | string | empty
+
+| set healthcheck answer to HTTP 200 or HTTP 503 | `GSE_HEALTHCHECK` | `-healthcheck` | boolean | `true`
+
+|===
+
+.We also have the standard -h cli arg
+[source,console]
+----
+$ ./gse -h
+----
+
+Since we use https://github.com/namsral/flag to parse arguments, they can be fed either through command line or env vars. 
+
+CAUTION: flag parsing when value is `/...` seems to be bugged on windows 
+
+
+== Compile
+
+Goal is to create a small but standalone binary to allow us to build a small container image. 
+
+.Build with static linking so we can Dockerfile FROM scratch
+[source,console]
+----
+$ CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-w" .
+$ strip gse
+----
+
+The resulting binary should be < 7 Mb 
+
+.Run
+[source,console]
+----
+$ ./gse
+----
+
+point your web browser to http://localhost:28657/gse 
+
+== Create docker image
+
+The idea is to create an image `FROM scratch`.
+
+Since the app has been statically linked, the Dockerfile is simply
+
+.Dockerfile
+[source,docker]
+----
+FROM scratch
+ADD gse /
+ADD template.html /
+CMD ["/gse"]
+----
+
+.Build image 
+[source,console]
+----
+$ sudo docker build -t gse .
+----
+
+== Run locally with docker
+
+=== Using default config
+[source,console]
+----
+$ sudo docker run -p 28657:28657 gse
+----
+
+point your web browser to http://localhost:28657/gse 
+
+=== using parameters
+[source,console]
+----
+$ sudo docker run -e GSE_BASEPATH=/foo -e GSE_PORT=2000 -e GSE_STAMP=A -e GSE_HEALTHCHECK=false -p 2000:2000 gse
+----
+
+.Point your web browser to
+* http://localhost:2000/foo 
+* http://localhost:2000/foo/version
+* http://localhost:2000/foo/health
+
+.Set healthcheck endpoint to "ok"
+ $ curl -X PUT http://localhost:2000/foo/health
+
+
+
+
+
+
+

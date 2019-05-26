@@ -11,7 +11,6 @@ import (
 	"os"
 	"sort"
 	"io"
-	"io/ioutil"
 	"github.com/namsral/flag"
 )
 
@@ -47,7 +46,7 @@ func Init(
 
 func check(err error) {
 	if err != nil {
-		Error.Printf(err)
+		Error.Printf("%s",err)
 	}
 }
 
@@ -69,10 +68,9 @@ func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 		Url:          fmt.Sprint(r.URL),
 		HeaderOutput: []string{},
 		BodyOutput:   "",
-		EnvOutput:    []string{}
-	}
+		EnvOutput:    []string{}	}
 
-	Trace.Printf(",", o.Method, " ,", o.Host, " ,", o.Url)
+	Trace.Printf("%s %s%s", o.Method, o.Host, o.Url)
 
 	//headers
 	header := r.Header
@@ -105,15 +103,24 @@ func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	var programVersion = "3.0"
 	var programName = "gse"
-	
-	Init(ioutil.Stdout, os.Stdout, os.Stdout, os.Stderr)
-    
-    // env parsing
-    flag.StringVar(&uri,"basepath", "/gse", "base path in the url")
-    flag.IntVar(&port,"port", 28657, "default listening port")
-    flag.BoolVar(&healthcheck,"healthcheck", true, "enable/disable healthckeck endpoint")
 
-    flag.Parse()
+	var uri, mark string
+	var port int
+	var healthcheck bool
+	
+	Init(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
+	
+	
+	
+	// env parsing
+	confManager := flag.NewFlagSetWithEnvPrefix(os.Args[0], "GSE", 0)
+
+    confManager.StringVar(&uri,"basepath", "/gse", "base path in the url")
+    confManager.IntVar(&port,"port", 28657, "default listening port")
+	confManager.BoolVar(&healthcheck,"healthcheck", true, "enable/disable healthckeck endpoint")
+	confManager.StringVar(&mark,"stamp", "", "specify a stamp to be added to version endpoint answer")
+
+    confManager.Parse(os.Args[1:])
 
 	// get an http server
 	mux := http.NewServeMux()
@@ -124,22 +131,26 @@ func main() {
 	
 	//	/uri/version
 	mux.HandleFunc(uri + "/version", func(w http.ResponseWriter, r *http.Request) {
+		Trace.Printf("%s %s%s", r.Method, r.Host, r.URL)
 		w.WriteHeader(200)
-		fmt.Fprintln(w, programVersion)
+		fmt.Fprintln(w, programVersion + mark)
 	})
 	
 	//	/uri/health
 	mux.HandleFunc(uri + "/health", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method = "GET" {
-			if healthcheck {
-				w.WriteHeader(200)
-				fmt.Fprintln(w, "I'm alive")
-			} else {
-				w.WriteHeader(503)
-				fmt.Fprintln(w, "I´m sick")
-			}
-		} else if r.Method = "POST" {
-			healthcheck = !healthcheck
+		Trace.Printf("%s %s%s", r.Method, r.Host, r.URL)
+		switch r.Method {
+			case "GET": 
+				if healthcheck {
+					w.WriteHeader(200)
+					fmt.Fprintln(w, "I'm alive")
+				} else {
+					w.WriteHeader(503)
+					fmt.Fprintln(w, "I´m sick")
+				}
+			case "POST", "PUT": 
+				healthcheck = !healthcheck
+				Trace.Printf("healthcheck has been switched to %t", healthcheck)
 		}
 	})
 	
@@ -152,16 +163,17 @@ func main() {
 	
 	// start http server
 	s := &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
+		Addr:    fmt.Sprintf(":%d", port),
 		Handler: mux,
 	}
 
 	// log config used
-	Info.Printf("Starting %s (%s) on port %s with basepath %s and healthtcheck=%s...\n",
+	Info.Printf("Starting %s (%s) on port %d with basepath %s and healthtcheck=%t...\n",
 		programName,
-		programVersion, 
+		programVersion+mark, 
 		port, 
 		uri, 
 		healthcheck )
+
 	log.Fatal(s.ListenAndServe())
 }
