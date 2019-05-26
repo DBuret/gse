@@ -1,5 +1,5 @@
-GGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-w" .
-strip gse
+GGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-s -w" .
+upx --brute gse
 sudo docker build -t gse .
 sudo docker save gse > gse.tar
 gzip gse.tar
