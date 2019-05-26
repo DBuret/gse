@@ -40,15 +40,15 @@ GSE offers 3 end points
 
 === Display version & stamp
 * `/gse/version` endpoint can be queried through any HTTP method (GET, PUT, ...). It will answer an HTTP 200 status,with a single text line content made of program version and its stamp (if one has been specified, default stamp being empty) 
-** the "stamp" allows us to test rolling, blue/green, or canary update with our container orchestrator: the same docker image (=same version) can be run with a given stamp (see GSE_STAMP bellow) given as parameter by the orchestrator, so we can differenciate to deployments, exemple:
-*** with no stamp, the answer will be `3.0`
-*** with GSE_STAMP="A",  the answer will be `3.0A`
+* the "stamp" allows us to test rolling, blue/green, or canary update with our container orchestrator: the same docker image (=same version) can be run with a given stamp (see GSE_STAMP bellow) given as parameter by the orchestrator, so we can differenciate to deployments, exemple:
+** with no stamp, the answer will be `3.0`
+** with GSE_STAMP="A",  the answer will be `3.0A`
 
 
 === Healthcheck
 * `/gse/health` is a endpoint to be used as healthcheck through an HTTP `GET` query. Answer will be 
 ** when healtcheck is on: HTTP 200 status, content will be the text string _I'm alive_ 
-** when healthcechk is off: HTTP 503 status, content will be the text string _I'm sick_ 
+** when healthcheck is off: HTTP 503 status, content will be the text string _I'm sick_ 
 ** no log will be written to stdout
 * healthcheck can be switched on/off (flip/flop) with an access with HTTP `POST` or `PUT` methods:
 *** `curl -X POST http://127.0.0.1:28657/gse/health`
@@ -57,8 +57,6 @@ GSE offers 3 end points
 
     healthcheck has been switched to false
     healthcheck has been switched to true
-
-
 
 == Parameters
 

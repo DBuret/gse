@@ -138,7 +138,6 @@ func main() {
 	
 	//	/uri/health
 	mux.HandleFunc(uri + "/health", func(w http.ResponseWriter, r *http.Request) {
-		Trace.Printf("%s %s%s", r.Method, r.Host, r.URL)
 		switch r.Method {
 			case "GET": 
 				if healthcheck {
