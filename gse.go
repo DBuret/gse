@@ -137,6 +137,7 @@ func main() {
 	//	/uri/health
 	mux.HandleFunc(uri+"/health", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
+		// health status
 		case "GET":
 			if healthcheck {
 				w.WriteHeader(200)
@@ -145,7 +146,9 @@ func main() {
 				w.WriteHeader(503)
 				fmt.Fprintln(w, "I´m sick")
 			}
+		// flip/flop health state
 		case "POST", "PUT":
+			// this is dirty - no mutex...
 			healthcheck = !healthcheck
 			Trace.Printf("healthcheck has been switched to %t", healthcheck)
 		}
