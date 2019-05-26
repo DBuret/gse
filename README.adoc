@@ -97,11 +97,10 @@ Goal is to create a small but standalone binary to allow us to build a small con
 .Build with static linking so we can Dockerfile FROM scratch
 [source,console]
 ----
-$ CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-w" .
-$ strip gse
+$ CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-s -w" .
 ----
 
-The resulting binary should be < 7 Mb 
+The resulting binary should be < 7 Mb. If that's too big, you can use upx.
 
 .Run
 [source,console]
