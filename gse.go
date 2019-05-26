@@ -17,6 +17,9 @@ import (
 )
 
 var (
+	programVersion = "4.1"
+	programName    = "gse"
+
 	// Trace logger: debug
 	Trace *log.Logger
 	// Info logger: standard info logs
@@ -25,6 +28,10 @@ var (
 	Warning *log.Logger
 	// Error logger: panic
 	Error *log.Logger
+
+	uri, mark             string
+	port                  int
+	healthcheck, loggerEP bool
 )
 
 // Init : setup loggers
@@ -112,12 +119,60 @@ func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, o)
 }
 
+func versionHandler(w http.ResponseWriter, r *http.Request) {
+	Trace.Printf("%s %s%s", r.Method, r.Host, r.URL)
+	w.WriteHeader(200)
+	fmt.Fprintln(w, programVersion+mark)
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	// health status
+	case "GET":
+		if healthcheck {
+			w.WriteHeader(200)
+			fmt.Fprintln(w, "I'm alive")
+		} else {
+			w.WriteHeader(503)
+			fmt.Fprintln(w, "I´m sick")
+		}
+	// flip/flop health state
+	case "POST", "PUT":
+		// this is dirty - no mutex...
+		healthcheck = !healthcheck
+		w.WriteHeader(200)
+		fmt.Fprintln(w, fmt.Sprintf("healthcheck has been switched to %t", healthcheck))
+		Trace.Printf("healthcheck has been switched to %t", healthcheck)
+	}
+}
+
+func loggerHandler(w http.ResponseWriter, r *http.Request) {
+	if loggerEP {
+		switch r.Method {
+		case "GET":
+			w.WriteHeader(400)
+			fmt.Fprintln(w, "logger endpoint uncorrectly called with GET method")
+			Warning.Printf("logger endpoint uncorrectly called with GET method")
+		case "POST", "PUT":
+			bdy := new(bytes.Buffer)
+			bdy.ReadFrom(r.Body)
+
+			w.WriteHeader(200)
+			fmt.Fprintln(w, "data ingested.")
+			Trace.Printf(fmt.Sprintf("%s %s%s, LOGGER: %s",
+				r.Method,
+				r.Host,
+				r.URL,
+				sanitize(bdy.String())))
+		}
+	} else {
+		w.WriteHeader(400)
+		fmt.Fprintln(w, "logger endpoint called but not activited in configuration")
+		Warning.Printf("logger endpoint called but not activited in configuration")
+	}
+}
+
 func main() {
-	var programVersion = "4.0"
-	var programName = "gse"
-	var uri, mark string
-	var port int
-	var healthcheck, loggerEP bool
 
 	Init(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
 
@@ -138,64 +193,21 @@ func main() {
 	// handlers
 	//	 /uri
 	mux.HandleFunc(uri, showEnvHandler)
+	mux.HandleFunc(uri+"/", showEnvHandler)
 
 	//	/uri/version
-	mux.HandleFunc(uri+"/version", func(w http.ResponseWriter, r *http.Request) {
-		Trace.Printf("%s %s%s", r.Method, r.Host, r.URL)
-		w.WriteHeader(200)
-		fmt.Fprintln(w, programVersion+mark)
-	})
+	mux.HandleFunc(uri+"/version", versionHandler)
+	mux.HandleFunc(uri+"/version/", versionHandler)
 
 	//	/uri/health
-	mux.HandleFunc(uri+"/health", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		// health status
-		case "GET":
-			if healthcheck {
-				w.WriteHeader(200)
-				fmt.Fprintln(w, "I'm alive")
-			} else {
-				w.WriteHeader(503)
-				fmt.Fprintln(w, "I´m sick")
-			}
-		// flip/flop health state
-		case "POST", "PUT":
-			// this is dirty - no mutex...
-			healthcheck = !healthcheck
-			w.WriteHeader(200)
-			fmt.Fprintln(w, fmt.Sprintf("healthcheck has been switched to %t", healthcheck))
-			Trace.Printf("healthcheck has been switched to %t", healthcheck)
-		}
-	})
+	mux.HandleFunc(uri+"/health", healthHandler)
+	mux.HandleFunc(uri+"/health/", healthHandler)
 
 	//	/uri/logger
-	mux.HandleFunc(uri+"/logger", func(w http.ResponseWriter, r *http.Request) {
-		if loggerEP {
-			switch r.Method {
-			case "GET":
-				w.WriteHeader(400)
-				fmt.Fprintln(w, "logger endpoint uncorrectly called with GET method")
-				Warning.Printf("logger endpoint uncorrectly called with GET method")
-			case "POST", "PUT":
-				bdy := new(bytes.Buffer)
-				bdy.ReadFrom(r.Body)
+	mux.HandleFunc(uri+"/logger", loggerHandler)
+	mux.HandleFunc(uri+"/logger/", loggerHandler)
 
-				w.WriteHeader(200)
-				fmt.Fprintln(w, "data ingested.")
-				Trace.Printf(fmt.Sprintf("%s %s%s, LOGGER: %s",
-					r.Method,
-					r.Host,
-					r.URL,
-					sanitize(bdy.String())))
-			}
-		} else {
-			w.WriteHeader(400)
-			fmt.Fprintln(w, "logger endpoint called but not activited in configuration")
-			Warning.Printf("logger endpoint called but not activited in configuration")
-		}
-	})
-
-	//	/
+	//	default handler for /
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		fmt.Fprintln(w, "Oops, you requested an unknown location.\n FYI, my base path is "+uri)
