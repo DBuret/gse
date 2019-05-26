@@ -107,9 +107,9 @@ Goal is to create a small but standalone binary to allow us to build a small con
 $ CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-s -w" .
 ----
 
-The resulting binary should be < 7 Mb. 
+The resulting binary should be < 9 Mb. 
 
-TIP: If that's too big, you can use upx to reduce file size to 2 Mb
+TIP: If that's too big, you can use upx to reduce file size to ~ 2.5 Mb
 
 .Run
 [source,console]
@@ -126,7 +126,7 @@ The idea is to create an image `FROM scratch`.
 Since the app has been statically linked, the Dockerfile is simply
 
 .Dockerfile
-[source,docker]
+[source,dockerfile]
 ----
 FROM scratch
 ADD gse /
@@ -166,28 +166,27 @@ $ sudo docker run -e GSE_BASEPATH=/foo -e GSE_PORT=2000 -e GSE_STAMP=A -e GSE_HE
 
 === RAM usage
 
-WARNING: gse will eat around 8Mb of _RAM_ (even if your _file_ has been shrinked by upx, upon execution it will be uncompressed to RAM. Using upx just saves disk space and download time). When setting ressources quota to a gse container, allow 10 Mb of RAM to the container and you will be safe.
+WARNING: gse will eat around 14 Mb of _RAM_ (even if your _file_ has been shrinked by upx, upon execution it will be uncompressed to RAM. Using upx just saves disk space and download time). When setting ressources quota to a gse container, allow 20 Mb of RAM to the container and you will be safe.
 
 [source,console]
 ----
 $ ps -ef |grep gse
-root      34866  34865  0 17:40 pts/1    00:00:00 sudo docker run -e GSE_BASEPATH=/toto -e GSE_PORT=2000 -e GSE_STAMP=A -e GSE_HEALTHCHECK=false -p 2000:2000 gse
-root      34867  34866  0 17:40 pts/1    00:00:00 /usr/bin/docker-current run -e GSE_BASEPATH=/toto -e GSE_PORT=2000 -e GSE_STAMP=A -e GSE_HEALTHCHECK=false -p 2000:2000 gse
-root      34904  34890  0 17:40 ?        00:00:00 /gse
-david     35584  16990  0 17:44 pts/1    00:00:00 grep --color=auto gse
-$ sudo pmap -x 34904
-34904:   /gse
+root      20034  17983  0 20:20 pts/0    00:00:00 sudo docker run -e GSE_BASEPATH=/foo -e GSE_PORT=2000 -e GSE_STAMP=A -e GSE_HEALTHCHECK=false -e GSE_LOGGER=true -p 2000:2000 gse
+root      20035  20034  0 20:20 pts/0    00:00:00 /usr/bin/docker-current run -e GSE_BASEPATH=/foo -e GSE_PORT=2000 -e GSE_STAMP=A -e GSE_HEALTHCHECK=false -e GSE_LOGGER=true -p 2000:2000 gse
+root      20068  20055  0 20:20 ?        00:00:00 /gse
+$ sudo pmap -x 20068
+20068:   /gse
 Address           Kbytes     RSS   Dirty Mode  Mapping
-0000000000400000    3188    3188    3188 r-x--   [ anon ]
-000000000071d000    3624    3624    3624 r----   [ anon ]
-0000000000aa7000     368     272     272 rw---   [ anon ]
-000000c000000000   65536     344     344 rw---   [ anon ]
-00007f76dabbd000   35524     160     160 rw---   [ anon ]
-00007ffca70a9000     132      24      24 rw---   [ stack ]
-00007ffca7177000       8       4       0 r-x--   [ anon ]
+0000000000400000    3324    3324    3324 r-x--   [ anon ]
+000000000073f000    3740    3740    3740 r----   [ anon ]
+0000000000ae6000     372     280     280 rw---   [ anon ]
+000000c000000000   65536    2048    2048 rw---   [ anon ]
+00007f3397dc5000   35524    4216    4216 rw---   [ anon ]
+00007fffa460b000     132      32      32 rw---   [ stack ]
+00007fffa468f000       8       4       0 r-x--   [ anon ]
 ffffffffff600000       4       0       0 r-x--   [ anon ]
 ---------------- ------- ------- -------
-total kB          108384    7616    7612
+total kB          108640   13644   13640
 ----
     
 
