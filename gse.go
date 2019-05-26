@@ -12,10 +12,8 @@ import (
 	"sort"
 	"io"
 	"io/ioutil"
-	"github.com/DBuret/pathandport"
+	"github.com/namsral/flag"
 )
-
-
 
 var (
     Trace   *log.Logger
@@ -71,9 +69,10 @@ func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 		Url:          fmt.Sprint(r.URL),
 		HeaderOutput: []string{},
 		BodyOutput:   "",
-		EnvOutput:    []string{}}
+		EnvOutput:    []string{}
+	}
 
-	Info.Printf(",", o.Method, " ,", o.Host, " ,", o.Url)
+	Trace.Printf(",", o.Method, " ,", o.Host, " ,", o.Url)
 
 	//headers
 	header := r.Header
@@ -104,35 +103,66 @@ func showEnvHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var programVersion = "0.6"
+	var programVersion = "3.0"
 	var programName = "gse"
 	
-	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+	Init(ioutil.Stdout, os.Stdout, os.Stdout, os.Stderr)
+    
+    // env parsing
+    flag.StringVar(&uri,"basepath", "/gse", "base path in the url")
+    flag.IntVar(&port,"port", 28657, "default listening port")
+    flag.BoolVar(&healthcheck,"healthcheck", true, "enable/disable healthckeck endpoint")
 
-	uri, port, info, err := pathAndPort.Parse(programName, "28657")
-	
-	check(err)
+    flag.Parse()
 
+	// get an http server
 	mux := http.NewServeMux()
 	
+	// handlers
+	//	 /uri
 	mux.HandleFunc(uri, showEnvHandler)
 	
+	//	/uri/version
 	mux.HandleFunc(uri + "/version", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		fmt.Fprintln(w, "Oops, you requested an unknown location.\n FYI, my base path is " + uri)
+		fmt.Fprintln(w, programVersion)
 	})
 	
+	//	/uri/health
+	mux.HandleFunc(uri + "/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method = "GET" {
+			if healthcheck {
+				w.WriteHeader(200)
+				fmt.Fprintln(w, programVersion)
+			} else {
+				w.WriteHeader(503)
+				fmt.Fprintln(w, "I´m sick")
+			}
+		} else if r.Method = "POST" {
+			healthcheck = !healthcheck
+		}
+	})
+	
+	//	/
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		fmt.Fprintln(w, "Oops, you requested an unknown location.\n FYI, my base path is " + uri)
 	})
 	
+	
+	// start http server
 	s := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: mux,
 	}
 
-	Info.Printf("%s\nStarting %s (%s) on port %s with basepath %s ...\n", info,programName, programVersion, port, uri)
+	// log config used
+	Info.Printf("Starting %s (%s) on port %s with basepath %s and healthtcheck=%s...\n",
+		programName,
+		programVersion, 
+		port, 
+		uri, 
+		healthcheck )
 	log.Fatal(s.ListenAndServe())
 }
 
