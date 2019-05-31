@@ -5,6 +5,7 @@ COPY --from=upx /usr/bin/upx /usr/bin/upx
 WORKDIR /go/src/github.com/DBuret/gse
 RUN go get -d -v github.com/namsral/flag
 COPY gse.go .
+COPY template.html .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-s -w" .
 RUN  /usr/bin/upx --brute gse
 
