@@ -9,10 +9,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-s -w" .
 RUN  /usr/bin/upx --brute gse
 
 FROM scratch
-LABEL version="4.0"
+LABEL version="4.1"
 LABEL link="https://github.com/DBuret/gse"
 LABEL description="Go Show Env - micro HTTP service to help understanding container orchestrators environment"
 WORKDIR /root/
-COPY --from=builder /root/gse .
-ADD template.html /
-CMD ["./gse"]
+COPY --from=builder /go/src/github.com/DBuret/gse .
+ADD template.html .
+CMD ["/root/gse"]
