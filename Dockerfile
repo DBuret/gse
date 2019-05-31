@@ -14,5 +14,6 @@ LABEL link="https://github.com/DBuret/gse"
 LABEL description="Go Show Env - micro HTTP service to help understanding container orchestrators environment"
 WORKDIR /root/
 COPY --from=builder /go/src/github.com/DBuret/gse /
-ADD template.html /
+COPY --from=builder /go/src/github.com/DBuret/template.html /
+
 CMD ["/gse"]
