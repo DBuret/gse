@@ -7,7 +7,7 @@
 :toclevels: 4
 :toc:
 :imagesdir: images/
-:gitplant: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/DBuret/myjournal/master/
+:gitplant: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/DBuret/gse/master/
 ifdef::env-github[]
 :tip-caption: :bulb:
 :note-caption: :information_source:
@@ -18,9 +18,17 @@ endif::[]
 
 == Introduction 
 
-GSE is a small standalone web app that just display its env &amp; informations about the HTTP request it received
+GSE is a small standalone web app designed to help debugging the environment of orchestred containers, through a very small go app.
 
-Its goal is to be embedded in a minimal container (less than 10 Mb), to help us debugging the setup of our containers orchestrator & reverse proxies.
+It can be be easly packaged into a < 3 MB docker image that will run with less than 20 Mo of ram, making it easly to deploy.
+
+.It offers 3 endpoints
+* displays its env and the details of the http request it received
+** usefull to understand what env and request your containers receive
+* healthcheck that can also be turned in ok or ko state through a simple http call
+** usefull to play with your container orchestrator (kubernetes, nomad...) routing system.
+* logger tonoutput what you want on the log output
+** usefull to test your that log gathering system
 
 WARNING: This was my first attempt as golang. Quick'n Dirty, but this tool has been proven usefull during our journey with Nomad or Kube...
 
