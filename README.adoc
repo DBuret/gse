@@ -7,7 +7,7 @@
 :toclevels: 4
 :toc:
 :imagesdir: images/
-:gitplant: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/DBuret/myjournal/master/
+:gitplant: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/DBuret/gse/master/
 ifdef::env-github[]
 :tip-caption: :bulb:
 :note-caption: :information_source:
@@ -18,9 +18,17 @@ endif::[]
 
 == Introduction 
 
-GSE is a small standalone web app that just display its env &amp; informations about the HTTP request it received
+GSE is a small standalone web app designed to help debugging the environment of orchestred containers, through a very small go app.
 
-Its goal is to be embedded in a minimal container (less than 10 Mb), to help us debugging the setup of our containers orchestrator & reverse proxies.
+It can be be easly packaged into a < 3 MB docker image that will run with less than 20 Mo of ram, making it easly to deploy.
+
+.It offers 3 endpoints
+* displays its env and the details of the http request it received
+** usefull to understand what env and request your containers receive
+* healthcheck that can also be turned in ok or ko state through a simple http call
+** usefull to play with your container orchestrator (kubernetes, nomad...) routing system.
+* logger tonoutput what you want on the log output
+** usefull to test your that log gathering system
 
 WARNING: This was my first attempt as golang. Quick'n Dirty, but this tool has been proven usefull during our journey with Nomad or Kube...
 
@@ -121,16 +129,30 @@ point your web browser to http://localhost:28657/gse
 
 == Create docker image
 
-The idea is to create an image `FROM scratch`.
-
-Since the app has been statically linked, the Dockerfile is simply
+the following is a multi stage docker build.
+first we compile and compress executable in the _builder_ stage, then we create an image `FROM scratch'
 
 .Dockerfile
 [source,dockerfile]
 ----
+FROM devalias/upx:devel AS upx
+
+FROM golang AS builder
+COPY --from=upx /usr/bin/upx /usr/bin/upx
+WORKDIR /go/src/github.com/DBuret/gse
+RUN go get -d -v github.com/namsral/flag
+COPY gse.go .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags "-s -w" .
+RUN  /usr/bin/upx --brute gse
+
 FROM scratch
-ADD gse /
-ADD template.html /
+LABEL version="4.1"
+LABEL link="https://github.com/DBuret/gse"
+LABEL description="Go Show Env - micro HTTP service to help understanding container orchestrators environment"
+WORKDIR /
+COPY --from=builder /go/src/github.com/DBuret/gse .
+ADD template.html .
+
 CMD ["/gse"]
 ----
 
