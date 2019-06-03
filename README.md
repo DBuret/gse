@@ -7,7 +7,7 @@ It can be be easly packaged into a < 3 MB docker image that will run with less t
 
 The docker image is availble on dockerhub: https://hub.docker.com/r/davidburet/gse
 
-More details are available in the [README.adoc] (the README.md is needed here since docker hub does not parse asciidoc)
+More details are available in the [README.adoc](README.adoc) (the README.md is needed here since docker hub does not parse asciidoc)
 
 # endpoints
 
