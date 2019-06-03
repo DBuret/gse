@@ -20,7 +20,7 @@ endif::[]
 
 GSE is a small standalone web app designed to help debugging the environment of orchestred containers, through a very small go app.
 
-It can be be easly packaged into a < 3 MB docker image that will run with less than 20 Mo of ram, making it easly to deploy.
+It can be be easly packaged into a < 3 MB docker image that will run with less than 20 Mo of ram, making it easly to deploy. See the image on  https://hub.docker.com/r/davidburet/gse[dockerhub]
 
 .It offers 4 endpoints
 * displays its env and the details of the http request it received
