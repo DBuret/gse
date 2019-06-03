@@ -35,7 +35,7 @@ WARNING: This was my first attempt as golang. Quick'n Dirty, but this tool has b
 
 == Endpoints
 
-GSE offers 3 end points
+GSE offers 4 end points
 
 === Display environment
 
