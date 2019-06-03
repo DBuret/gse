@@ -22,9 +22,10 @@ GSE is a small standalone web app designed to help debugging the environment of 
 
 It can be be easly packaged into a < 3 MB docker image that will run with less than 20 Mo of ram, making it easly to deploy.
 
-.It offers 3 endpoints
+.It offers 4 endpoints
 * displays its env and the details of the http request it received
 ** usefull to understand what env and request your containers receive
+* display its version in a single line of text
 * healthcheck that can also be turned in ok or ko state through a simple http call
 ** usefull to play with your container orchestrator (kubernetes, nomad...) routing system.
 * logger tonoutput what you want on the log output
