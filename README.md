@@ -5,9 +5,7 @@ GSE is a small standalone web app designed to help debugging the environment of 
 
 It can be be easly packaged into a < 3 MB docker image that will run with less than 20 Mo of ram, making it easly to deploy.
 
-The docker image is availble on dockerhub: https://hub.docker.com/r/davidburet/gse
-
-More details are available in the [README.adoc](README.adoc) (the README.md is needed here since docker hub does not parse asciidoc)
+More details (all parameters) are available in the [README.adoc](https://github.com/DBuret/gse/blob/master/README.adoc) (the README.md is needed here since docker hub does not parse asciidoc)
 
 # endpoints
 
